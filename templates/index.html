@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Happy Birthday Cidez!</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .color-btn-selected {
+        @apply ring-2 ring-offset-2 ring-blue-400;
+      }
+      .post-image {
+        max-width: 100%;
+        max-height: 16rem;
+        object-fit: contain;
+        display: block;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+      }
+      .modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+      }
+      .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .close:hover,
+      .close:focus {
+        color: #bbb;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .bg-navy {
+        background-color: #1a2238;
+      }
+      .bg-navy-card {
+        background-color: #222b45;
+      }
+      .bg-post-blue {
+        background-color: #232e5c;
+      }
+      .bg-post-red {
+        background-color: #3a2332;
+      }
+    </style>
+  </head>
+  <body class="bg-navy">
+    {% if show_confetti %}
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+      // Custom confetti animation for 10 seconds with blue/white colors
+      const end = Date.now() + 10 * 1000;
+      const colors = ["#1c398e", "#ffffff", "#8ec5ff"];
+      (function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors,
+        });
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors,
+        });
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+    </script>
+    {% endif %}
+    <div class="container mx-auto px-4 py-8">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-3xl font-bold text-blue-200">
+          Happy 25th Birthday Cidez!
+        </h1>
+        <div class="flex items-center space-x-4">
+          <span class="text-blue-100 font-semibold"
+            >welcome {{ username }}</span
+          >
+          <a
+            href="{{ url_for('logout') }}"
+            class="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition"
+            >Logout</a
+          >
+        </div>
+      </div>
+      <div class="flex gap-8">
+        <!-- Rank Card -->
+        <div class="w-96 flex-shrink-0">
+          <div
+            class="bg-navy-card rounded-lg shadow-md p-6 flex items-center justify-between text-white"
+          >
+            <div class="flex items-center">
+              <img
+                src="{{ url_for('static', filename='rank_icons/' + rank_info.icon) }}"
+                alt="Rank Icon"
+                class="w-14 h-14 mr-4"
+              />
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xl text-white font-bold"
+                    >{{ rank_info.rank }}</span
+                  >
+                </div>
+                <div class="text-base text-white mt-1">
+                  {{ rank_info.lp }} LP
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-base font-semibold">
+                <span class="text-blue-300">{{ rank_info.wins }}W</span>
+                <span class="text-gray-400"> </span>
+                <span class="text-red-300">{{ rank_info.losses }}L</span>
+              </div>
+              <div class="text-sm text-gray-300 mt-1">
+                {{ rank_info.win_rate }}% Win Rate
+              </div>
+            </div>
+          </div>
+
+          <!-- Post Counts Section -->
+          <div class="bg-navy-card rounded-lg shadow-md p-6 mt-4">
+            <h3 class="text-lg font-bold text-white mb-4">
+              Cidez Fan Club Leaderboard
+            </h3>
+            <div class="space-y-2">
+              {% for user in post_counts %}
+              <div class="flex justify-between items-center py-2 px-3 rounded">
+                <span class="font-semibold text-white"
+                  >{{ user.username }}</span
+                >
+                <span class="text-white font-bold">{{ user.count }} meows</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow">
+          <!-- Post Form -->
+          <div class="bg-navy-card rounded-lg shadow-md p-4 mb-4">
+            <form
+              action="{{ url_for('create_post') }}"
+              method="POST"
+              enctype="multipart/form-data"
+            >
+              <div class="flex space-x-4">
+                <!-- Form Content -->
+                <div class="flex-grow">
+                  <!-- Profile Picture Selection -->
+                  <div class="mb-3">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-400">Champion:</span>
+                      <div class="relative">
+                        <button
+                          type="button"
+                          id="profileDropdownBtn"
+                          class="flex items-center space-x-2 px-3 py-1 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+                        >
+                          <div
+                            id="selectedProfile"
+                            class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center"
+                          >
+                            <span class="text-white text-xs font-bold"
+                              >{{ username[0] | upper }}</span
+                            >
+                          </div>
+                          <svg
+                            class="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
+
+                        <!-- Profile Selection Dropdown -->
+                        <div
+                          id="profileDropdown"
+                          class="hidden absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-3 z-10 w-max overflow-y-auto max-h-96"
+                        >
+                          <div
+                            class="grid grid-cols-6 gap-y-2 justify-items-center w-full"
+                          >
+                            <label class="cursor-pointer">
+                              <input
+                                type="radio"
+                                name="profile_picture"
+                                value=""
+                                class="hidden"
+                                checked
+                              />
+                              <div
+                                class="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center border-2 border-transparent hover:border-blue-300 transition mx-auto"
+                              >
+                                <span class="text-white text-xl font-bold"
+                                  >{{ username[0] | upper }}</span
+                                >
+                              </div>
+                              <div
+                                class="text-sm text-gray-400 text-center mt-2"
+                              >
+                                Initial
+                              </div>
+                            </label>
+                            {% for icon in champ_icons %}
+                            <label class="cursor-pointer">
+                              <input
+                                type="radio"
+                                name="profile_picture"
+                                value="{{ icon }}"
+                                class="hidden"
+                              />
+                              <div
+                                class="w-20 h-20 rounded-full bg-gray-900 flex items-center justify-center border-2 border-transparent hover:border-blue-300 transition mx-auto overflow-hidden"
+                              >
+                                <img
+                                  src="{{ url_for('static', filename='champ_icons/' + icon) }}"
+                                  alt="{{ icon }}"
+                                  class="w-full h-full object-cover transform scale-125"
+                                />
+                              </div>
+                              <div
+                                class="text-sm text-gray-400 text-center mt-2"
+                              >
+                                {{ icon.rsplit('.', 1)[0] }}
+                              </div>
+                            </label>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Textarea -->
+                  <textarea
+                    name="content"
+                    placeholder="write a message for cidez :) (and pick if you want him to win or lose lp)"
+                    required
+                    class="w-full text-lg bg-transparent border-none focus:ring-0 resize-none p-2 placeholder-gray-500 text-white"
+                    rows="3"
+                  ></textarea>
+
+                  <!-- Image Preview -->
+                  <div
+                    id="imagePreviewContainer"
+                    class="mt-2 hidden border rounded-lg"
+                  >
+                    <img
+                      id="imagePreview"
+                      class="max-h-80 rounded-lg"
+                      alt="Image Preview"
+                    />
+                  </div>
+
+                  <!-- Form Actions -->
+                  <div class="flex justify-between items-center mt-4">
+                    <!-- Left Actions: Image upload + Result buttons -->
+                    <div class="flex items-center space-x-2">
+                      <!-- Image Upload Icon -->
+                      <label
+                        for="imageInput"
+                        class="cursor-pointer text-blue-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition"
+                        title="Upload Image"
+                      >
+                        <svg
+                          class="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          ></path>
+                        </svg>
+                      </label>
+                      <input
+                        type="file"
+                        name="image"
+                        id="imageInput"
+                        class="hidden"
+                        accept="image/*,image/gif"
+                      />
+
+                      <!-- Result Buttons -->
+                      <div class="flex space-x-1" id="colorBtnGroup">
+                        <button
+                          type="button"
+                          data-color="blue"
+                          class="color-btn text-xs font-bold py-1 px-3 rounded-full transition"
+                        >
+                          Victory
+                        </button>
+                        <button
+                          type="button"
+                          data-color="red"
+                          class="color-btn text-xs font-bold py-1 px-3 rounded-full transition"
+                        >
+                          Defeat
+                        </button>
+                      </div>
+                      <input
+                        type="hidden"
+                        name="color"
+                        id="colorInput"
+                        value="blue"
+                      />
+                    </div>
+
+                    <!-- Right Actions: Post Button -->
+                    <button
+                      type="submit"
+                      id="postSubmitBtn"
+                      class="bg-blue-500 text-white font-bold px-6 py-2 rounded-full hover:bg-blue-600 transition duration-200"
+                    >
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Posts Feed -->
+          <div class="space-y-3">
+            {% for post in posts %}
+            <div
+              class="rounded-lg shadow-md p-4 {% if post.color == 'blue' %}bg-post-blue{% elif post.color == 'red' %}bg-post-red{% endif %}"
+            >
+              <!-- Post Header -->
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-start space-x-3">
+                  <!-- Profile Picture -->
+                  {% if post.profile_picture %}
+                  <div
+                    class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  >
+                    <img
+                      src="{{ url_for('static', filename='champ_icons/' + post.profile_picture) }}"
+                      alt="Profile"
+                      class="w-full h-full object-cover transform scale-125"
+                    />
+                  </div>
+                  {% else %}
+                  <div
+                    class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0"
+                  >
+                    <span class="text-white text-sm font-bold"
+                      >{{ post.username[0] | upper }}</span
+                    >
+                  </div>
+                  {% endif %}
+
+                  <!-- Username and Info -->
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-bold text-white text-lg"
+                        >{{ post.username }}</span
+                      >
+                      <span class="text-gray-400 text-sm"
+                        >· {{ post.created_at.strftime('%b %d') }}</span
+                      >
+                      <span
+                        class="font-semibold {% if post.color == 'blue' %}text-blue-400{% elif post.color == 'red' %}text-red-400{% endif %}"
+                      >
+                        {% if post.lp >= 0 %}+{% endif %}{{ post.lp }} LP
+                      </span>
+                    </div>
+
+                    <!-- Post Content -->
+                    <div class="text-gray-200 whitespace-pre-line mt-2">
+                      {{- post.content -}}
+                    </div>
+
+                    <!-- Post Image -->
+                    {% if post.image_filename %}
+                    <div class="rounded-lg overflow-hidden mt-3">
+                      <img
+                        src="{{ url_for('static', filename='uploads/' + post.image_filename) }}"
+                        alt="Post Image"
+                        class="max-h-80 w-full object-cover cursor-pointer"
+                        onclick="openModal(this.src)"
+                      />
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                {% if post.username == username %}
+                <form
+                  action="{{ url_for('delete_post', post_id=post.id) }}"
+                  method="POST"
+                  onsubmit="return confirm('Are you sure?');"
+                  class="inline"
+                >
+                  <button
+                    type="submit"
+                    class="text-xs text-gray-400 hover:text-white"
+                  >
+                    Delete
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+      <span class="close">&times;</span>
+      <img class="modal-content" id="modalImage" />
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- Initialize Create Post Form ---
+        const createFormColorGroup = document.getElementById("colorBtnGroup");
+        const colorInput = document.getElementById("colorInput");
+
+        function updateCreateColorSelection(selectedColor) {
+          colorInput.value = selectedColor;
+
+          createFormColorGroup.querySelectorAll(".color-btn").forEach((btn) => {
+            const btnColor = btn.dataset.color;
+            btn.classList.remove(
+              "bg-blue-500",
+              "text-white",
+              "bg-blue-100",
+              "text-blue-600",
+              "bg-red-500",
+              "bg-red-100",
+              "text-red-600"
+            );
+
+            if (btn.dataset.color === selectedColor) {
+              btn.classList.add(`bg-${btnColor}-500`, "text-white");
+            } else {
+              btn.classList.add(`bg-${btnColor}-100`, `text-${btnColor}-600`);
+            }
+          });
+        }
+
+        createFormColorGroup.querySelectorAll(".color-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            updateCreateColorSelection(e.target.dataset.color);
+          });
+        });
+
+        updateCreateColorSelection("blue"); // Set initial state to "Victory"
+
+        // --- Initialize Profile Picture Dropdown ---
+        const profileDropdownBtn =
+          document.getElementById("profileDropdownBtn");
+        const profileDropdown = document.getElementById("profileDropdown");
+        const selectedProfile = document.getElementById("selectedProfile");
+
+        // Toggle dropdown
+        profileDropdownBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          profileDropdown.classList.toggle("hidden");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+          if (
+            !profileDropdownBtn.contains(e.target) &&
+            !profileDropdown.contains(e.target)
+          ) {
+            profileDropdown.classList.add("hidden");
+          }
+        });
+
+        // Handle profile selection
+        const profileInputs = document.querySelectorAll(
+          'input[name="profile_picture"]'
+        );
+        profileInputs.forEach((input) => {
+          input.addEventListener("change", function () {
+            const label = this.closest("label");
+            const profileDiv = label.querySelector("div");
+
+            // Update selected profile display
+            selectedProfile.innerHTML = profileDiv.innerHTML;
+            selectedProfile.className = profileDiv.className
+              .replace("w-20 h-20", "w-6 h-6")
+              .replace("mx-auto", "");
+
+            // Close dropdown
+            profileDropdown.classList.add("hidden");
+          });
+        });
+
+        // --- Initialize Image Preview for Create Form ---
+        const imageInput = document.getElementById("imageInput");
+        if (imageInput) {
+          const imagePreviewContainer = document.getElementById(
+            "imagePreviewContainer"
+          );
+          const imagePreview = document.getElementById("imagePreview");
+          imageInput.addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                imagePreview.src = e.target.result;
+                imagePreviewContainer.classList.remove("hidden");
+              };
+              reader.readAsDataURL(file);
+            } else {
+              imagePreview.src = "";
+              imagePreviewContainer.classList.add("hidden");
+            }
+          });
+        }
+      });
+
+      // --- Modal Logic (unchanged) ---
+      const modal = document.getElementById("imageModal");
+      const modalImg = document.getElementById("modalImage");
+      const span = document.getElementsByClassName("close")[0];
+
+      function openModal(src) {
+        modal.style.display = "block";
+        modalImg.src = src;
+      }
+
+      span.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      modal.onclick = function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      };
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && modal.style.display === "block") {
+          modal.style.display = "none";
+        }
+      });
+    </script>
+  </body>
+</html>

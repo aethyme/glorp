@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Happy Birthday Cidez!</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .bg-navy {
+        background-color: #1a2238;
+      }
+      .bg-navy-card {
+        background-color: #222b45;
+      }
+    </style>
+  </head>
+  <body class="bg-navy flex flex-col items-center justify-center min-h-screen">
+    <!-- Countdown Timer at Top -->
+    <div class="text-center mb-8">
+      <div class="text-lg text-gray-300 mb-2">
+        Countdown to Cidez's Birthday
+      </div>
+      <div id="countdown" class="text-4xl font-bold text-blue-300">
+        <span id="days">--</span>d <span id="hours">--</span>h
+        <span id="minutes">--</span>m <span id="seconds">--</span>s
+      </div>
+    </div>
+
+    <div class="bg-navy-card rounded-lg shadow-md p-8 w-full max-w-md">
+      <h2 class="text-2xl font-bold text-center mb-6 text-blue-200">Login</h2>
+
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+        <div class="bg-red-100 text-red-700 px-4 py-2 rounded mb-2">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+      <form method="POST" class="space-y-4">
+        <input
+          type="text"
+          name="username"
+          placeholder="Username"
+          required
+          autofocus
+          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white text-gray-800"
+        />
+        <button
+          type="submit"
+          class="w-full bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-800 transition duration-200"
+        >
+          Login
+        </button>
+      </form>
+    </div>
+
+    <script>
+      // Countdown to July 24th
+      function updateCountdown() {
+        const now = new Date();
+        const targetDate = new Date("July 24, 2024 00:00:00");
+
+        // If July 24th has passed, set target to next year
+        if (now > targetDate) {
+          targetDate.setFullYear(targetDate.getFullYear() + 1);
+        }
+
+        const timeDifference = targetDate - now;
+
+        const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(
+          (timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        const minutes = Math.floor(
+          (timeDifference % (1000 * 60 * 60)) / (1000 * 60)
+        );
+        const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+        document.getElementById("days").textContent = days;
+        document.getElementById("hours").textContent = hours
+          .toString()
+          .padStart(2, "0");
+        document.getElementById("minutes").textContent = minutes
+          .toString()
+          .padStart(2, "0");
+        document.getElementById("seconds").textContent = seconds
+          .toString()
+          .padStart(2, "0");
+      }
+
+      // Update countdown every second
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    </script>
+  </body>
+</html>
