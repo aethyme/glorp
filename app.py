@@ -75,34 +75,39 @@ def get_champ_icons():
     try:
         # For Vercel deployment, handle static files differently
         if os.getenv('VERCEL'):
-            # On Vercel, we'll use a predefined list of champion icons
-            # This is a fallback since we can't read the directory on Vercel
+            # On Vercel, we'll use a comprehensive list of champion icons
+            # This includes all champions with proper handling of spaces and special characters
             return [
                 'Aatrox.png', 'Ahri.png', 'Akali.png', 'Akshan.png', 'Alistar.png',
-                'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png', 'Ashe.png',
-                'Aurelion Sol.png', 'Azir.png', 'Bard.png', 'Bel\'veth.png', 'Blitzcrank.png',
-                'Brand.png', 'Braum.png', 'Briar.png', 'Caitlyn.png', 'Camille.png',
-                'Cassiopeia.png', 'Cho\'gath.png', 'Corki.png', 'Darius.png', 'Diana.png',
-                'Dr. Mundo.png', 'Draven.png', 'Ekko.png', 'Elise.png', 'Evelynn.png',
-                'Ezreal.png', 'Fiddlesticks.png', 'Fiora.png', 'Fizz.png', 'Galio.png',
-                'Gangplank.png', 'Garen.png', 'Gnar.png', 'Gragas.png', 'Graves.png',
-                'Gwen.png', 'Hecarim.png', 'Heimerdinger.png', 'Illaoi.png', 'Irelia.png',
-                'Ivern.png', 'Janna.png', 'Jarvan IV.png', 'Jax.png', 'Jayce.png',
-                'Jhin.png', 'Jinx.png', 'K\'Sante.png', 'Kai\'sa.png', 'Kalista.png',
-                'Karma.png', 'Karthus.png', 'Kassadin.png', 'Katarina.png', 'Kayle.png',
-                'Kayn.png', 'Kennen.png', 'Kha\'zix.png', 'Kindred.png', 'Kled.png',
-                'Kog\'Maw.png', 'Leblanc.png', 'Lee Sin.png', 'Leona.png', 'Lillia.png',
-                'Lissandra.png', 'Lucian.png', 'Lulu.png', 'Lux.png', 'Malphite.png',
-                'Malzahar.png', 'Maokai.png', 'Master Yi.png', 'Miss Fortune.png',
-                'Mordekaiser.png', 'Morgana.png', 'Nami.png', 'Nasus.png', 'Nautilus.png',
-                'Neeko.png', 'Nidalee.png', 'Nocturne.png', 'Nunu.png', 'Olaf.png',
-                'Orianna.png', 'Ornn.png', 'Pantheon.png', 'Poppy.png'
+                'Ambessa.png', 'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png',
+                'Ashe.png', 'Aurelion Sol.png', 'Aurora.png', 'Azir.png', 'Bard.png',
+                'Bel\'veth.png', 'Blitzcrank.png', 'Brand.png', 'Braum.png', 'Briar.png',
+                'Caitlyn.png', 'Camille.png', 'Cassiopeia.png', 'Cho\'gath.png', 'Corki.png',
+                'Darius.png', 'Diana.png', 'Dr. Mundo.png', 'Draven.png', 'Ekko.png',
+                'Elise.png', 'Evelynn.png', 'Ezreal.png', 'Fiddlesticks.png', 'Fiora.png',
+                'Fizz.png', 'Galio.png', 'Gangplank.png', 'Garen.png', 'Gnar.png',
+                'Gragas.png', 'Graves.png', 'Gwen.png', 'Hecarim.png', 'Heimerdinger.png',
+                'Hwei.png', 'Illaoi.png', 'Irelia.png', 'Ivern.png', 'Janna.png',
+                'Jarvan IV.png', 'Jax.png', 'Jayce.png', 'Jhin.png', 'Jinx.png',
+                'K\'Sante.png', 'Kai\'sa.png', 'Kalista.png', 'Karma.png', 'Karthus.png',
+                'Kassadin.png', 'Katarina.png', 'Kayle.png', 'Kayn.png', 'Kennen.png',
+                'Kha\'zix.png', 'Kindred.png', 'Kled.png', 'Kog\'Maw.png', 'Leblanc.png',
+                'Lee Sin.png', 'Leona.png', 'Lillia.png', 'Lissandra.png', 'Lucian.png',
+                'Lulu.png', 'Lux.png', 'Malphite.png', 'Malzahar.png', 'Maokai.png',
+                'Master Yi.png', 'Mel.png', 'Milio.png', 'Miss Fortune.png', 'Mordekaiser.png',
+                'Morgana.png', 'Naafiri.png', 'Nami.png', 'Nasus.png', 'Nautilus.png',
+                'Neeko.png', 'Nidalee.png', 'Nilah.png', 'Nocturne.png', 'Nunu.png',
+                'Olaf.png', 'Orianna.png', 'Ornn.png', 'Pantheon.png', 'Poppy.png'
             ]
         else:
-            # Local development - read from directory
+            # Local development - read from directory and sort alphabetically
             champ_icons_path = os.path.join('static', 'champ_icons')
             if os.path.exists(champ_icons_path):
-                return os.listdir(champ_icons_path)
+                icons = os.listdir(champ_icons_path)
+                # Filter for PNG files and sort alphabetically
+                icons = [icon for icon in icons if icon.lower().endswith('.png')]
+                icons.sort()
+                return icons
             else:
                 return []
     except Exception as e:
