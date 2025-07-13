@@ -4,6 +4,7 @@ import os
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -38,6 +39,75 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_to_supabase_storage(file, username):
+    """Upload file to Supabase Storage"""
+    try:
+        # Generate unique filename
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{username}/{uuid.uuid4()}.{file_extension}"
+        
+        # Upload to Supabase Storage
+        response = supabase.storage.from_('uploads').upload(
+            path=unique_filename,
+            file=file.read(),
+            file_options={"content-type": file.content_type}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_('uploads').get_public_url(unique_filename)
+        return public_url
+    except Exception as e:
+        print(f"Error uploading to Supabase Storage: {e}")
+        return None
+
+def delete_from_supabase_storage(file_url):
+    """Delete file from Supabase Storage"""
+    try:
+        # Extract filename from URL
+        filename = file_url.split('/')[-1]
+        supabase.storage.from_('uploads').remove([filename])
+    except Exception as e:
+        print(f"Error deleting from Supabase Storage: {e}")
+
+def get_champ_icons():
+    """Get list of champion icons for the dropdown"""
+    try:
+        # For Vercel deployment, handle static files differently
+        if os.getenv('VERCEL'):
+            # On Vercel, we'll use a predefined list of champion icons
+            # This is a fallback since we can't read the directory on Vercel
+            return [
+                'Aatrox.png', 'Ahri.png', 'Akali.png', 'Akshan.png', 'Alistar.png',
+                'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png', 'Ashe.png',
+                'Aurelion Sol.png', 'Azir.png', 'Bard.png', 'Bel\'veth.png', 'Blitzcrank.png',
+                'Brand.png', 'Braum.png', 'Briar.png', 'Caitlyn.png', 'Camille.png',
+                'Cassiopeia.png', 'Cho\'gath.png', 'Corki.png', 'Darius.png', 'Diana.png',
+                'Dr. Mundo.png', 'Draven.png', 'Ekko.png', 'Elise.png', 'Evelynn.png',
+                'Ezreal.png', 'Fiddlesticks.png', 'Fiora.png', 'Fizz.png', 'Galio.png',
+                'Gangplank.png', 'Garen.png', 'Gnar.png', 'Gragas.png', 'Graves.png',
+                'Gwen.png', 'Hecarim.png', 'Heimerdinger.png', 'Illaoi.png', 'Irelia.png',
+                'Ivern.png', 'Janna.png', 'Jarvan IV.png', 'Jax.png', 'Jayce.png',
+                'Jhin.png', 'Jinx.png', 'K\'Sante.png', 'Kai\'sa.png', 'Kalista.png',
+                'Karma.png', 'Karthus.png', 'Kassadin.png', 'Katarina.png', 'Kayle.png',
+                'Kayn.png', 'Kennen.png', 'Kha\'zix.png', 'Kindred.png', 'Kled.png',
+                'Kog\'Maw.png', 'Leblanc.png', 'Lee Sin.png', 'Leona.png', 'Lillia.png',
+                'Lissandra.png', 'Lucian.png', 'Lulu.png', 'Lux.png', 'Malphite.png',
+                'Malzahar.png', 'Maokai.png', 'Master Yi.png', 'Miss Fortune.png',
+                'Mordekaiser.png', 'Morgana.png', 'Nami.png', 'Nasus.png', 'Nautilus.png',
+                'Neeko.png', 'Nidalee.png', 'Nocturne.png', 'Nunu.png', 'Olaf.png',
+                'Orianna.png', 'Ornn.png', 'Pantheon.png', 'Poppy.png'
+            ]
+        else:
+            # Local development - read from directory
+            champ_icons_path = os.path.join('static', 'champ_icons')
+            if os.path.exists(champ_icons_path):
+                return os.listdir(champ_icons_path)
+            else:
+                return []
+    except Exception as e:
+        print(f"Error getting champion icons: {e}")
+        return []
 
 def get_rank_and_lp():
     # Get all posts from Supabase
@@ -126,12 +196,7 @@ def home():
     rank_info = get_rank_and_lp()
     post_counts = get_post_counts()
     show_confetti = is_cidez()
-    
-    # For Vercel deployment, handle static files differently
-    if os.getenv('VERCEL'):
-        champ_icons = []  # We'll handle this differently for Vercel
-    else:
-        champ_icons = os.listdir(os.path.join('static', 'champ_icons'))
+    champ_icons = get_champ_icons()
     
     return render_template(
         'index.html',
@@ -151,15 +216,21 @@ def create_post():
     username = session['username']
     color = request.form.get('color', 'blue')
     image_filename = None
+    image_url = None
     profile_picture = request.form.get('profile_picture', '')
 
-    # Handle image upload
+    # Handle image upload - try Supabase Storage first, then local storage
     if 'image' in request.files:
         file = request.files['image']
         if file and allowed_file(file.filename):
-            filename = secure_filename(f"{datetime.utcnow().timestamp()}_{file.filename}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            image_filename = filename
+            # Try Supabase Storage first
+            image_url = upload_to_supabase_storage(file, username)
+            
+            # If Supabase Storage fails, fall back to local storage
+            if not image_url:
+                filename = secure_filename(f"{datetime.utcnow().timestamp()}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                image_filename = filename
     
     if not content:
         flash('Content is required.')
@@ -175,6 +246,7 @@ def create_post():
         'color': color,
         'lp': lp,
         'image_filename': image_filename,
+        'image_url': image_url,
         'profile_picture': profile_picture,
         'created_at': datetime.utcnow().isoformat()
     }
@@ -201,7 +273,11 @@ def delete_post(post_id):
         flash('You can only delete your own posts.')
         return redirect(url_for('home'))
     
-    # Remove image file if exists
+    # Delete image from Supabase Storage if exists
+    if post.get('image_url'):
+        delete_from_supabase_storage(post['image_url'])
+    
+    # Remove local image file if exists
     if post.get('image_filename'):
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], post['image_filename']))
