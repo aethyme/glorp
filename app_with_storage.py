@@ -4,6 +4,7 @@ import os
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -24,20 +25,41 @@ if not supabase_url or not supabase_key:
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# For Vercel deployment, use a different upload folder path
-if os.getenv('VERCEL'):
-    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
-else:
-    app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
-
 app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8MB max upload size
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# Create upload folder if it doesn't exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_to_supabase_storage(file, username):
+    """Upload file to Supabase Storage"""
+    try:
+        # Generate unique filename
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{username}/{uuid.uuid4()}.{file_extension}"
+        
+        # Upload to Supabase Storage
+        response = supabase.storage.from_('uploads').upload(
+            path=unique_filename,
+            file=file.read(),
+            file_options={"content-type": file.content_type}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_('uploads').get_public_url(unique_filename)
+        return public_url
+    except Exception as e:
+        print(f"Error uploading to Supabase Storage: {e}")
+        return None
+
+def delete_from_supabase_storage(file_url):
+    """Delete file from Supabase Storage"""
+    try:
+        # Extract filename from URL
+        filename = file_url.split('/')[-1]
+        supabase.storage.from_('uploads').remove([filename])
+    except Exception as e:
+        print(f"Error deleting from Supabase Storage: {e}")
 
 def get_rank_and_lp():
     # Get all posts from Supabase
@@ -150,16 +172,14 @@ def create_post():
     content = request.form.get('content', '')
     username = session['username']
     color = request.form.get('color', 'blue')
-    image_filename = None
+    image_url = None
     profile_picture = request.form.get('profile_picture', '')
 
-    # Handle image upload
+    # Handle image upload to Supabase Storage
     if 'image' in request.files:
         file = request.files['image']
         if file and allowed_file(file.filename):
-            filename = secure_filename(f"{datetime.utcnow().timestamp()}_{file.filename}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            image_filename = filename
+            image_url = upload_to_supabase_storage(file, username)
     
     if not content:
         flash('Content is required.')
@@ -174,7 +194,7 @@ def create_post():
         'username': username,
         'color': color,
         'lp': lp,
-        'image_filename': image_filename,
+        'image_url': image_url,  # Store URL instead of filename
         'profile_picture': profile_picture,
         'created_at': datetime.utcnow().isoformat()
     }
@@ -201,12 +221,9 @@ def delete_post(post_id):
         flash('You can only delete your own posts.')
         return redirect(url_for('home'))
     
-    # Remove image file if exists
-    if post.get('image_filename'):
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], post['image_filename']))
-        except Exception:
-            pass
+    # Delete image from Supabase Storage if exists
+    if post.get('image_url'):
+        delete_from_supabase_storage(post['image_url'])
     
     # Delete post from Supabase
     supabase.table('posts').delete().eq('id', post_id).execute()
