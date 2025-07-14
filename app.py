@@ -70,50 +70,6 @@ def delete_from_supabase_storage(file_url):
     except Exception as e:
         print(f"Error deleting from Supabase Storage: {e}")
 
-def get_champ_icons():
-    """Get list of champion icons for the dropdown"""
-    try:
-        # For Vercel deployment, handle static files differently
-        if os.getenv('VERCEL'):
-            # On Vercel, we'll use a comprehensive list of champion icons
-            # This includes all champions with proper handling of spaces and special characters
-            return [
-                'Aatrox.png', 'Ahri.png', 'Akali.png', 'Akshan.png', 'Alistar.png',
-                'Ambessa.png', 'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png',
-                'Ashe.png', 'Aurelion Sol.png', 'Aurora.png', 'Azir.png', 'Bard.png',
-                'Bel\'veth.png', 'Blitzcrank.png', 'Brand.png', 'Braum.png', 'Briar.png',
-                'Caitlyn.png', 'Camille.png', 'Cassiopeia.png', 'Cho\'gath.png', 'Corki.png',
-                'Darius.png', 'Diana.png', 'Dr. Mundo.png', 'Draven.png', 'Ekko.png',
-                'Elise.png', 'Evelynn.png', 'Ezreal.png', 'Fiddlesticks.png', 'Fiora.png',
-                'Fizz.png', 'Galio.png', 'Gangplank.png', 'Garen.png', 'Gnar.png',
-                'Gragas.png', 'Graves.png', 'Gwen.png', 'Hecarim.png', 'Heimerdinger.png',
-                'Hwei.png', 'Illaoi.png', 'Irelia.png', 'Ivern.png', 'Janna.png',
-                'Jarvan IV.png', 'Jax.png', 'Jayce.png', 'Jhin.png', 'Jinx.png',
-                'K\'Sante.png', 'Kai\'sa.png', 'Kalista.png', 'Karma.png', 'Karthus.png',
-                'Kassadin.png', 'Katarina.png', 'Kayle.png', 'Kayn.png', 'Kennen.png',
-                'Kha\'zix.png', 'Kindred.png', 'Kled.png', 'Kog\'Maw.png', 'Leblanc.png',
-                'Lee Sin.png', 'Leona.png', 'Lillia.png', 'Lissandra.png', 'Lucian.png',
-                'Lulu.png', 'Lux.png', 'Malphite.png', 'Malzahar.png', 'Maokai.png',
-                'Master Yi.png', 'Mel.png', 'Milio.png', 'Miss Fortune.png', 'Mordekaiser.png',
-                'Morgana.png', 'Naafiri.png', 'Nami.png', 'Nasus.png', 'Nautilus.png',
-                'Neeko.png', 'Nidalee.png', 'Nilah.png', 'Nocturne.png', 'Nunu.png',
-                'Olaf.png', 'Orianna.png', 'Ornn.png', 'Pantheon.png', 'Poppy.png'
-            ]
-        else:
-            # Local development - read from directory and sort alphabetically
-            champ_icons_path = os.path.join('static', 'champ_icons')
-            if os.path.exists(champ_icons_path):
-                icons = os.listdir(champ_icons_path)
-                # Filter for PNG files and sort alphabetically
-                icons = [icon for icon in icons if icon.lower().endswith('.png')]
-                icons.sort()
-                return icons
-            else:
-                return []
-    except Exception as e:
-        print(f"Error getting champion icons: {e}")
-        return []
-
 def get_rank_and_lp():
     # Get all posts from Supabase
     response = supabase.table('posts').select('*').execute()
@@ -194,6 +150,12 @@ def home():
     if not is_logged_in():
         return redirect(url_for('login'))
     
+
+     # For Vercel deployment, handle static files differently
+    if os.getenv('VERCEL'):
+        champ_icons = []  # We'll handle this differently for Vercel
+    else:
+        champ_icons = os.listdir(os.path.join('static', 'champ_icons'))
     # Get posts from Supabase, ordered by created_at desc
     response = supabase.table('posts').select('*').order('created_at', desc=True).execute()
     posts = response.data
@@ -201,7 +163,6 @@ def home():
     rank_info = get_rank_and_lp()
     post_counts = get_post_counts()
     show_confetti = is_cidez()
-    champ_icons = get_champ_icons()
     
     return render_template(
         'index.html',
