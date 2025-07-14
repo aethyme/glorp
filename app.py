@@ -121,6 +121,42 @@ def is_logged_in():
 def is_cidez():
     return session.get('username', '').lower() == 'cidez'
 
+def get_champ_icons():
+    """Get list of champion icons - works both locally and on Vercel"""
+    # Hardcoded list of champion icons
+    champ_icons = [
+        'Aatrox.png', 'Ahri.png', 'Akali.png', 'Akshan.png', 'Alistar.png', 'Ambessa.png',
+        'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png', 'Ashe.png', 'Aurelion Sol.png',
+        'Aurora.png', 'Azir.png', 'Bard.png', 'Bel\'veth.png', 'Blitzcrank.png', 'Brand.png',
+        'Braum.png', 'Briar.png', 'Caitlyn.png', 'Camille.png', 'Cassiopeia.png', 'Cho\'gath.png',
+        'Corki.png', 'Darius.png', 'Diana.png', 'Dr. Mundo.png', 'Draven.png', 'Ekko.png',
+        'Elise.png', 'Evelynn.png', 'Ezreal.png', 'Fiddlesticks.png', 'Fiora.png', 'Fizz.png',
+        'Galio.png', 'Gangplank.png', 'Garen.png', 'Gnar.png', 'Gragas.png', 'Graves.png',
+        'Gwen.png', 'Hecarim.png', 'Heimerdinger.png', 'Hwei.png', 'Illaoi.png', 'Irelia.png',
+        'Ivern.png', 'Janna.png', 'Jarvan IV.png', 'Jax.png', 'Jayce.png', 'Jhin.png',
+        'Jinx.png', 'K\'Sante.png', 'Kai\'sa.png', 'Kalista.png', 'Karma.png', 'Karthus.png',
+        'Kassadin.png', 'Katarina.png', 'Kayle.png', 'Kayn.png', 'Kennen.png', 'Kha\'zix.png',
+        'Kindred.png', 'Kled.png', 'Kog\'Maw.png', 'Leblanc.png', 'Lee Sin.png', 'Leona.png',
+        'Lillia.png', 'Lissandra.png', 'Lucian.png', 'Lulu.png', 'Lux.png', 'Malphite.png',
+        'Malzahar.png', 'Maokai.png', 'Master Yi.png', 'Mel.png', 'Milio.png', 'Miss Fortune.png',
+        'Mordekaiser.png', 'Morgana.png', 'Naafiri.png', 'Nami.png', 'Nasus.png', 'Nautilus.png',
+        'Neeko.png', 'Nidalee.png', 'Nilah.png', 'Nocturne.png', 'Nunu.png', 'Olaf.png',
+        'Orianna.png', 'Ornn.png', 'Pantheon.png', 'Poppy.png', 'Pyke.png', 'Qiyana.png',
+        'Quinn.png', 'Rakan.png', 'Rammus.png', 'Rek\'Sai.png', 'Rell.png', 'Renata.png',
+        'Renekton.png', 'Rengar.png', 'Riven.png', 'Rumble.png', 'Ryze.png', 'Samira.png',
+        'Sejuani.png', 'Senna.png', 'Seraphine.png', 'Sett.png', 'Shaco.png', 'Shen.png',
+        'Shyvana.png', 'Singed.png', 'Sion.png', 'Sivir.png', 'Skarner.png', 'Smolder.png',
+        'Sona.png', 'Soraka.png', 'Swain.png', 'Sylas.png', 'Syndra.png', 'Tahm Kench.png',
+        'Taliyah.png', 'Talon.png', 'Taric.png', 'Teemo.png', 'Thresh.png', 'Tristana.png',
+        'Trundle.png', 'Tryndamere.png', 'Twisted Fate.png', 'Twitch.png', 'Udyr.png',
+        'Urgot.png', 'Varus.png', 'Vayne.png', 'Veigar.png', 'Vel\'koz.png', 'Vex.png',
+        'Vi.png', 'Viego.png', 'Viktor.png', 'Vladimir.png', 'Volibear.png', 'Warwick.png',
+        'Wukong.png', 'Xayah.png', 'Xerath.png', 'Xin Zhao.png', 'Yasuo.png', 'Yone.png',
+        'Yorick.png', 'Yuumi.png', 'Zac.png', 'Zed.png', 'Zeri.png', 'Ziggs.png',
+        'Zilean.png', 'Zoe.png', 'Zyra.png'
+    ]
+    return champ_icons
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -150,12 +186,9 @@ def home():
     if not is_logged_in():
         return redirect(url_for('login'))
     
-
-     # For Vercel deployment, handle static files differently
-    if os.getenv('VERCEL'):
-        champ_icons = []  # We'll handle this differently for Vercel
-    else:
-        champ_icons = os.listdir(os.path.join('static', 'champ_icons'))
+    # Get champion icons list
+    champ_icons = get_champ_icons()
+    
     # Get posts from Supabase, ordered by created_at desc
     response = supabase.table('posts').select('*').order('created_at', desc=True).execute()
     posts = response.data
