@@ -47,16 +47,20 @@ def upload_to_supabase_storage(file, username):
         # Generate unique filename
         file_extension = file.filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{username}/{uuid.uuid4()}.{file_extension}"
-        
+        print(f"Uploading {unique_filename} to Supabase Storage...")
+
         # Upload to Supabase Storage
-        response = supabase.storage.from_('uploads').upload(
+        file.stream.seek(0)  # Ensure pointer is at start
+        response = supabase.storage.from_('upload').upload(
             path=unique_filename,
             file=file.read(),
             file_options={"content-type": file.content_type}
         )
-        
+        print(f"Upload response: {response}")
+
         # Get public URL
-        public_url = supabase.storage.from_('uploads').get_public_url(unique_filename)
+        public_url = supabase.storage.from_('upload').get_public_url(unique_filename)
+        print(f"Public URL: {public_url}")
         return public_url
     except Exception as e:
         print(f"Error uploading to Supabase Storage: {e}")
@@ -239,20 +243,21 @@ def create_post():
         if file and allowed_file(file.filename):
             # Try Supabase Storage first
             image_url = upload_to_supabase_storage(file, username)
-            
             # If Supabase Storage fails, fall back to local storage
             if not image_url:
+                file.stream.seek(0)
                 filename = secure_filename(f"{datetime.utcnow().timestamp()}_{file.filename}")
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 image_filename = filename
-    
-    if not content:
-        flash('Content is required.')
+
+    # Only require content if no image is uploaded
+    if not content and not image_url and not image_filename:
+        flash('Content or an image is required.')
         return redirect(url_for('home'))
-    
+
     # Set LP based on color. Since 'red' is the only other option, this works.
     lp = 25 if color == 'blue' else -25
-    
+
     # Create post in Supabase
     post_data = {
         'content': content,
@@ -264,42 +269,47 @@ def create_post():
         'profile_picture': profile_picture,
         'created_at': datetime.utcnow().isoformat()
     }
-    
     supabase.table('posts').insert(post_data).execute()
-    
     return redirect(url_for('home'))
 
 @app.route('/delete/<int:post_id>', methods=['POST'])
 def delete_post(post_id):
     if not is_logged_in():
+        print('User not logged in')
         return redirect(url_for('login'))
-    
+    print(f'Trying to delete post with id: {post_id}')
     # Get post from Supabase
     response = supabase.table('posts').select('*').eq('id', post_id).execute()
     posts = response.data
-    
+    print(f'Posts found: {posts}')
     if not posts:
         flash('Post not found.')
+        print('Post not found')
         return redirect(url_for('home'))
-    
     post = posts[0]
     if post['username'] != session['username']:
         flash('You can only delete your own posts.')
+        print('User does not own post')
         return redirect(url_for('home'))
-    
     # Delete image from Supabase Storage if exists
     if post.get('image_url'):
+        print(f'Deleting image from Supabase Storage: {post["image_url"]}')
         delete_from_supabase_storage(post['image_url'])
-    
     # Remove local image file if exists
     if post.get('image_filename'):
         try:
+            print(f'Removing local image file: {post["image_filename"]}')
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], post['image_filename']))
-        except Exception:
-            pass
-    
+        except Exception as e:
+            print(f'Error removing local image file: {e}')
     # Delete post from Supabase
-    supabase.table('posts').delete().eq('id', post_id).execute()
+    try:
+        print(f'Deleting post from Supabase with id: {post_id}')
+        del_response = supabase.table('posts').delete().eq('id', post_id).execute()
+        print(f'Delete response: {del_response}')
+    except Exception as e:
+        print(f'Error deleting post from Supabase: {e}')
+        flash('Error deleting post.')
     return redirect(url_for('home'))
 
 # WSGI application for Vercel

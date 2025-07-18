@@ -412,7 +412,16 @@
                     </div>
 
                     <!-- Post Image -->
-                    {% if post.image_filename %}
+                    {% if post.image_url %}
+                    <div class="rounded-lg overflow-hidden mt-3">
+                      <img
+                        src="{{ post.image_url }}"
+                        alt="Post Image"
+                        class="max-h-80 w-full object-cover cursor-pointer"
+                        onclick="openModal(this.src)"
+                      />
+                    </div>
+                    {% elif post.image_filename %}
                     <div class="rounded-lg overflow-hidden mt-3">
                       <img
                         src="{{ url_for('static', filename='uploads/' + post.image_filename) }}"
