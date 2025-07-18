@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import uuid
+import re
 
 # Load environment variables
 load_dotenv()
@@ -123,39 +124,45 @@ def is_cidez():
 
 def get_champ_icons():
     """Get list of champion icons - works both locally and on Vercel"""
-    # Hardcoded list of champion icons
     champ_icons = [
         'Aatrox.png', 'Ahri.png', 'Akali.png', 'Akshan.png', 'Alistar.png', 'Ambessa.png',
-        'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png', 'Ashe.png', 'Aurelion Sol.png',
-        'Aurora.png', 'Azir.png', 'Bard.png', 'Bel\'veth.png', 'Blitzcrank.png', 'Brand.png',
-        'Braum.png', 'Briar.png', 'Caitlyn.png', 'Camille.png', 'Cassiopeia.png', 'Cho\'gath.png',
-        'Corki.png', 'Darius.png', 'Diana.png', 'Dr. Mundo.png', 'Draven.png', 'Ekko.png',
+        'Amumu.png', 'Anivia.png', 'Annie.png', 'Aphelios.png', 'Ashe.png', 'Aurelion_Sol.png',
+        'Aurora.png', 'Azir.png', 'Bard.png', "Bel'Veth.png", 'Blitzcrank.png', 'Brand.png',
+        'Braum.png', 'Briar.png', 'Caitlyn.png', 'Camille.png', 'Cassiopeia.png', "Cho'Gath.png",
+        'Corki.png', 'Darius.png', 'Diana.png', 'Draven.png', 'Dr_Mundo.png', 'Ekko.png',
         'Elise.png', 'Evelynn.png', 'Ezreal.png', 'Fiddlesticks.png', 'Fiora.png', 'Fizz.png',
         'Galio.png', 'Gangplank.png', 'Garen.png', 'Gnar.png', 'Gragas.png', 'Graves.png',
         'Gwen.png', 'Hecarim.png', 'Heimerdinger.png', 'Hwei.png', 'Illaoi.png', 'Irelia.png',
-        'Ivern.png', 'Janna.png', 'Jarvan IV.png', 'Jax.png', 'Jayce.png', 'Jhin.png',
-        'Jinx.png', 'K\'Sante.png', 'Kai\'sa.png', 'Kalista.png', 'Karma.png', 'Karthus.png',
-        'Kassadin.png', 'Katarina.png', 'Kayle.png', 'Kayn.png', 'Kennen.png', 'Kha\'zix.png',
-        'Kindred.png', 'Kled.png', 'Kog\'Maw.png', 'Leblanc.png', 'Lee Sin.png', 'Leona.png',
+        'Ivern.png', 'Janna.png', 'Jarvan_IV.png', 'Jax.png', 'Jayce.png', 'Jhin.png',
+        'Jinx.png', "K'Sante.png", "Kai'Sa.png", 'Kalista.png', 'Karma.png', 'Karthus.png',
+        'Kassadin.png', 'Katarina.png', 'Kayle.png', 'Kayn.png', 'Kennen.png', "Kha'Zix.png",
+        'Kindred.png', 'Kled.png', "Kog'Maw.png", 'Leblanc.png', 'Lee_Sin.png', 'Leona.png',
         'Lillia.png', 'Lissandra.png', 'Lucian.png', 'Lulu.png', 'Lux.png', 'Malphite.png',
-        'Malzahar.png', 'Maokai.png', 'Master Yi.png', 'Mel.png', 'Milio.png', 'Miss Fortune.png',
+        'Malzahar.png', 'Maokai.png', 'Master_Yi.png', 'Mel.png', 'Milio.png', 'Miss_Fortune.png',
         'Mordekaiser.png', 'Morgana.png', 'Naafiri.png', 'Nami.png', 'Nasus.png', 'Nautilus.png',
         'Neeko.png', 'Nidalee.png', 'Nilah.png', 'Nocturne.png', 'Nunu.png', 'Olaf.png',
         'Orianna.png', 'Ornn.png', 'Pantheon.png', 'Poppy.png', 'Pyke.png', 'Qiyana.png',
-        'Quinn.png', 'Rakan.png', 'Rammus.png', 'Rek\'Sai.png', 'Rell.png', 'Renata.png',
+        'Quinn.png', 'Rakan.png', 'Rammus.png', "Rek'Sai.png", 'Rell.png', 'Renata.png',
         'Renekton.png', 'Rengar.png', 'Riven.png', 'Rumble.png', 'Ryze.png', 'Samira.png',
         'Sejuani.png', 'Senna.png', 'Seraphine.png', 'Sett.png', 'Shaco.png', 'Shen.png',
         'Shyvana.png', 'Singed.png', 'Sion.png', 'Sivir.png', 'Skarner.png', 'Smolder.png',
-        'Sona.png', 'Soraka.png', 'Swain.png', 'Sylas.png', 'Syndra.png', 'Tahm Kench.png',
+        'Sona.png', 'Soraka.png', 'Swain.png', 'Sylas.png', 'Syndra.png', 'Tahm_Kench.png',
         'Taliyah.png', 'Talon.png', 'Taric.png', 'Teemo.png', 'Thresh.png', 'Tristana.png',
-        'Trundle.png', 'Tryndamere.png', 'Twisted Fate.png', 'Twitch.png', 'Udyr.png',
-        'Urgot.png', 'Varus.png', 'Vayne.png', 'Veigar.png', 'Vel\'koz.png', 'Vex.png',
+        'Trundle.png', 'Tryndamere.png', 'Twisted_Fate.png', 'Twitch.png', 'Udyr.png',
+        'Urgot.png', 'Varus.png', 'Vayne.png', 'Veigar.png', "Vel'Koz.png", 'Vex.png',
         'Vi.png', 'Viego.png', 'Viktor.png', 'Vladimir.png', 'Volibear.png', 'Warwick.png',
-        'Wukong.png', 'Xayah.png', 'Xerath.png', 'Xin Zhao.png', 'Yasuo.png', 'Yone.png',
-        'Yorick.png', 'Yuumi.png', 'Zac.png', 'Zed.png', 'Zeri.png', 'Ziggs.png',
-        'Zilean.png', 'Zoe.png', 'Zyra.png'
+        'Wukong.png', 'Xayah.png', 'Xerath.png', 'Xin_Zhao.png', 'Yasuo.png', 'Yone.png',
+        'Yorick.png', 'Yunara.png', 'Yuumi.png', 'Zac.png', 'Zed.png', 'Zeri.png',
+        'Ziggs.png', 'Zilean.png', 'Zoe.png', 'Zyra.png'
     ]
     return champ_icons
+
+@app.template_filter('split_camel')
+def split_camel(s):
+    # Remove file extension if present
+    s = s.rsplit('.', 1)[0]
+    # Replace underscores with spaces
+    return s.replace('_', ' ')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

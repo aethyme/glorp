@@ -257,7 +257,7 @@
                               <div
                                 class="text-sm text-gray-400 text-center mt-2"
                               >
-                                {{ icon.rsplit('.', 1)[0] }}
+                                {{ icon|split_camel }}
                               </div>
                             </label>
                             {% endfor %}
