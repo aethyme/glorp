@@ -44,6 +44,7 @@ def allowed_file(filename):
 def upload_to_supabase_storage(file, username):
     """Upload file to Supabase Storage"""
     try:
+        print(f"Received file: {file.filename}, content_type: {file.content_type}")
         # Generate unique filename
         file_extension = file.filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{username}/{uuid.uuid4()}.{file_extension}"
@@ -51,15 +52,17 @@ def upload_to_supabase_storage(file, username):
 
         # Upload to Supabase Storage
         file.stream.seek(0)  # Ensure pointer is at start
-        response = supabase.storage.from_('upload').upload(
+        response = supabase.storage.from_('uploads').upload(
             path=unique_filename,
             file=file.read(),
             file_options={"content-type": file.content_type}
         )
         print(f"Upload response: {response}")
+        if hasattr(response, 'error') and response.error:
+            print(f"Upload error: {response.error}")
 
         # Get public URL
-        public_url = supabase.storage.from_('upload').get_public_url(unique_filename)
+        public_url = supabase.storage.from_('uploads').get_public_url(unique_filename)
         print(f"Public URL: {public_url}")
         return public_url
     except Exception as e:
