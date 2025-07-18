@@ -164,6 +164,14 @@ def split_camel(s):
     # Replace underscores with spaces
     return s.replace('_', ' ')
 
+@app.template_filter('pretty_date')
+def pretty_date(s):
+    try:
+        dt = datetime.fromisoformat(s.replace('Z', '+00:00'))
+        return dt.strftime('%b %d')
+    except Exception:
+        return s
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':

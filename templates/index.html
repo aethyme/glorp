@@ -396,9 +396,9 @@
                       <span class="font-bold text-white text-lg"
                         >{{ post.username }}</span
                       >
-                      <span class="text-gray-400 text-sm"
-                        >· {{ post.created_at.strftime('%b %d') }}</span
-                      >
+                      <span class="text-gray-400 text-sm">
+                        · {{ post.created_at|pretty_date }}
+                      </span>
                       <span
                         class="font-semibold {% if post.color == 'blue' %}text-blue-400{% elif post.color == 'red' %}text-red-400{% endif %}"
                       >
